@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa Conceptual: Impacto de la IA en la Investigación de Mercados</title>
+  <style>
+    /* ==========================================================================
+       ESTILOS GENERALES Y TIPOGRAFÍA ACADÉMICA (TIMES NEW ROMAN)
+       ========================================================================== */
+    :root {
+      --bg-page: #fdfcf9;
+      --bg-node: #ffffff;
+      --bg-node-root: #111111;
+      --text-node-root: #ffffff;
+      --bg-node-section: #f3f2ee;
+      --border-dark: #1a1a1a;
+      --border-muted: #555555;
+      --text-main: #111111;
+      --text-secondary: #333333;
+      --line-color: #222222;
+      --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.06);
+      --highlight-ring: rgba(0, 0, 0, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Times New Roman", Times, Georgia, serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       BARRA DE CONTROLES SUPERIOR (OCULTA AL IMPRIMIR)
+       ========================================================================== */
+    .toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background-color: #ffffff;
+      border-bottom: 1.5px solid var(--border-dark);
+      padding: 10px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .toolbar-title {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar-title h1 {
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      color: var(--text-main);
+    }
+
+    .toolbar-title span {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn {
+      background-color: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-dark);
+      border-radius: 4px;
+      padding: 6px 11px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background-color: #f0efe9;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.active {
+      background-color: #111111;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .btn-primary {
+      background-color: #111111;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .btn-primary:hover {
+      background-color: #333333;
+    }
+
+    .zoom-indicator {
+      font-size: 13px;
+      min-width: 46px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .divider {
+      width: 1px;
+      height: 22px;
+      background-color: #cccccc;
+      margin: 0 4px;
+    }
+
+    /* ==========================================================================
+       LIENZO INTERACTIVO (PAN Y ZOOM)
+       ========================================================================== */
+    .viewport {
+      position: absolute;
+      top: 58px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      cursor: grab;
+      background-image: radial-gradient(#dcd9d0 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+
+    .viewport:active {
+      cursor: grabbing;
+    }
+
+    .canvas-stage {
+      position: relative;
+      width: 1580px;
+      min-height: 1120px;
+      padding: 36px 40px 56px 40px;
+      transform-origin: 0 0;
+      transition: transform 0.08s ease-out;
+    }
+
+    /* Capa SVG para líneas conectores y flechas */
+    #connectors-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Etiquetas de relación (palabras de enlace en cursiva sobre las líneas) */
+    .link-label {
+      position: absolute;
+      z-index: 3;
+      background-color: var(--bg-page);
+      border: 1px solid #888888;
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 12.5px;
+      font-style: italic;
+      color: #111111;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    /* ==========================================================================
+       JERARQUÍA Y NODOS DEL MAPA CONCEPTUAL
+       ========================================================================== */
+    .map-grid {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 62px;
+    }
+
+    .node {
+      background-color: var(--bg-node);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 5px;
+      padding: 11px 16px;
+      box-shadow: var(--shadow-subtle);
+      transition: opacity 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+    }
+
+    .node:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Nivel 0: Nodo Raíz */
+    .node-root {
+      background-color: var(--bg-node-root);
+      color: var(--text-node-root);
+      border: 2px solid #000000;
+      padding: 15px 30px;
+      text-align: center;
+      max-width: 660px;
+    }
+
+    .node-root h2 {
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    /* Nivel 1: Dos Ramas Principales */
+    .branches-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      width: 100%;
+    }
+
+    .branch-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+    }
+
+    .node-branch {
+      background-color: var(--bg-node-section);
+      border: 2px solid var(--border-dark);
+      padding: 12px 24px;
+      text-align: center;
+      width: 82%;
+    }
+
+    .node-branch h3 {
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .node-branch p {
+      font-size: 13.5px;
+      font-style: italic;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Nivel 2: Sub-ramas (Aplicaciones y Herramientas) */
+    .sub-branches-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+    }
+
+    .sub-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .node-concept {
+      padding: 10px 13px;
+      font-size: 13.5px;
+      line-height: 1.38;
+      border: 1.25px solid var(--border-dark);
+      background-color: #ffffff;
+    }
+
+    .node-concept strong {
+      font-weight: bold;
+      color: #000000;
+    }
+
+    .node-concept span {
+      color: #2b2b2b;
+    }
+
+    /* Nivel 3: Convergencia en Beneficios y Riesgos */
+    .evaluation-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      width: 92%;
+      margin-top: 10px;
+    }
+
+    .node-eval {
+      border: 1.8px solid var(--border-dark);
+      background-color: #ffffff;
+      padding: 14px 18px;
+    }
+
+    .node-eval-header {
+      background-color: var(--bg-node-section);
+      border-bottom: 1.5px solid var(--border-dark);
+      margin: -14px -18px 10px -18px;
+      padding: 9px 16px;
+      border-radius: 3px 3px 0 0;
+      text-align: center;
+    }
+
+    .node-eval-header h4 {
+      font-size: 15px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .eval-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .eval-list li {
+      font-size: 13.5px;
+      line-height: 1.38;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .eval-list li::before {
+      content: "▪";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #111111;
+    }
+
+    /* Nivel 4: Nodo Final de Convergencia Estratégica */
+    .final-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 92%;
+      gap: 48px;
+      margin-top: 10px;
+    }
+
+    .node-final-title {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      border: 2px solid #000000;
+      padding: 13px 28px;
+      text-align: center;
+      max-width: 720px;
+    }
+
+    .node-final-title h3 {
+      font-size: 16.5px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .final-outcomes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      width: 100%;
+    }
+
+    .node-outcome {
+      border: 1.5px solid var(--border-dark);
+      background-color: #ffffff;
+      padding: 13px 18px;
+      font-size: 14px;
+      line-height: 1.42;
+      text-align: center;
+    }
+
+    /* Estados de filtrado/resaltado */
+    .dimmed {
+      opacity: 0.22 !important;
+    }
+
+    .highlighted {
+      box-shadow: 0 0 0 3px var(--highlight-ring), 0 4px 12px rgba(0, 0, 0, 0.14) !important;
+    }
+
+    /* Ayuda flotante inferior */
+    .help-badge {
+      position: fixed;
+      bottom: 12px;
+      right: 16px;
+      z-index: 90;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid #999999;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-style: italic;
+      color: #333333;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       CONFIGURACIÓN DE IMPRESIÓN Y EXPORTACIÓN PDF EN UNA SOLA HOJA HORIZONTAL
+       ========================================================================== */
+    @page {
+      size: landscape;
+      margin: 8mm;
+    }
+
+    @media print {
+      html, body {
+        width: 100%;
+        height: auto;
+        overflow: visible !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .toolbar, .help-badge {
+        display: none !important;
+      }
+
+      .viewport {
+        position: static !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      .canvas-stage {
+        transform: scale(0.66) !important;
+        transform-origin: top left !important;
+        width: 1580px !important;
+        padding: 10px 20px !important;
+      }
+
+      .dimmed {
+        opacity: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE HERRAMIENTAS SUPERIOR -->
+  <header class="toolbar" role="region" aria-label="Controles del mapa conceptual">
+    <div class="toolbar-title">
+      <h1>Mapa Conceptual: Inteligencia Artificial en la Investigación de Mercados</h1>
+      <span>Estructura jerárquica y relacional • Enfoque académico</span>
+    </div>
+
+    <div class="toolbar-group" role="group" aria-label="Filtros por eje temático">
+      <button class="btn active" data-filter="all">Ver Todo</button>
+      <button class="btn" data-filter="secundaria">Inv. Secundaria</button>
+      <button class="btn" data-filter="primaria">Inv. Primaria</button>
+      <button class="btn" data-filter="eval">Beneficios y Riesgos</button>
+      <button class="btn" data-filter="decisiones">Toma de Decisiones</button>
+    </div>
+
+    <div class="toolbar-group" role="group" aria-label="Controles de vista e impresión">
+      <button class="btn" id="zoom-out" title="Alejar">−</button>
+      <span class="zoom-indicator" id="zoom-level">100%</span>
+      <button class="btn" id="zoom-in" title="Acercar">+</button>
+      <button class="btn" id="zoom-fit" title="Ajustar a pantalla">Ajustar</button>
+      <div class="divider"></div>
+      <button class="btn btn-primary" id="btn-print" title="Imprimir o guardar como PDF en una hoja horizontal">
+        Descargar / Imprimir PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- ÁREA DE VISUALIZACIÓN CON ZOOM Y ARRASTRE -->
+  <main class="viewport" id="viewport">
+    <div class="canvas-stage" id="canvas-stage">
+      <!-- Capa dinámica de líneas y flechas SVG -->
+      <svg id="connectors-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#222222" />
+          </marker>
+          <marker id="arrow-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#cccccc" />
+          </marker>
+        </defs>
+        <g id="svg-lines-group"></g>
+      </svg>
+
+      <!-- Capa dinámica de palabras de enlace (etiquetas en cursiva sobre las líneas) -->
+      <div id="link-labels-layer"></div>
+
+      <!-- ESTRUCTURA DE NODOS DEL MAPA CONCEPTUAL -->
+      <div class="map-grid">
+
+        <!-- NIVEL 0: NODO RAÍZ -->
+        <div class="node node-root" id="node-root" data-axes="all secundaria primaria eval decisiones">
+          <h2>Inteligencia Artificial en la Investigación de Mercados</h2>
+        </div>
+
+        <!-- NIVEL 1 Y 2: DOS GRANDES RAMAS DE INVESTIGACIÓN -->
+        <div class="branches-row">
+
+          <!-- RAMA 1: INVESTIGACIÓN SECUNDARIA -->
+          <section class="branch-column">
+            <div class="node node-branch" id="node-sec" data-axes="all secundaria">
+              <h3>1. Investigación Secundaria</h3>
+              <p>(Datos existentes previamente)</p>
+            </div>
+
+            <div class="sub-branches-grid">
+              <!-- Aplicaciones Secundaria -->
+              <div class="sub-column" id="group-sec-apps">
+                <div class="node node-concept" id="node-sec-app-1" data-axes="all secundaria">
+                  <strong>Búsqueda inteligente:</strong> <span>rastreo de informes, artículos y noticias en segundos.</span>
+                </div>
+                <div class="node node-concept" id="node-sec-app-2" data-axes="all secundaria">
+                  <strong>Recopilación automática:</strong> <span>limpieza y unificación de bases de datos dispersas.</span>
+                </div>
+                <div class="node node-concept" id="node-sec-app-3" data-axes="all secundaria">
+                  <strong>Análisis de tendencias:</strong> <span>resumen de textos largos y patrones históricos.</span>
+                </div>
+              </div>
+
+              <!-- Herramientas Secundaria -->
+              <div class="sub-column" id="group-sec-tools">
+                <div class="node node-concept" id="node-sec-tool-1" data-axes="all secundaria">
+                  <strong>Perplexity AI:</strong> <span>búsqueda en tiempo real con fuentes verificables.</span>
+                </div>
+                <div class="node node-concept" id="node-sec-tool-2" data-axes="all secundaria">
+                  <strong>NotebookLM:</strong> <span>cruce y síntesis comparativa de informes en PDF.</span>
+                </div>
+                <div class="node node-concept" id="node-sec-tool-3" data-axes="all secundaria">
+                  <strong>Brandwatch / Iris AI:</strong> <span>escucha social y opinión pública en redes.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- RAMA 2: INVESTIGACIÓN PRIMARIA -->
+          <section class="branch-column">
+            <div class="node node-branch" id="node-pri" data-axes="all primaria">
+              <h3>2. Investigación Primaria</h3>
+              <p>(Datos nuevos de primera mano)</p>
+            </div>
+
+            <div class="sub-branches-grid">
+              <!-- Aplicaciones Primaria -->
+              <div class="sub-column" id="group-pri-apps">
+                <div class="node node-concept" id="node-pri-app-1" data-axes="all primaria">
+                  <strong>Diseño de estudios:</strong> <span>encuestas sin sesgos y entrevistas adaptativas.</span>
+                </div>
+                <div class="node node-concept" id="node-pri-app-2" data-axes="all primaria">
+                  <strong>Análisis de opiniones:</strong> <span>clasificación automática de texto y emociones.</span>
+                </div>
+                <div class="node node-concept" id="node-pri-app-3" data-axes="all primaria">
+                  <strong>Lectura de comportamiento:</strong> <span>identificación de hábitos y necesidades ocultas.</span>
+                </div>
+              </div>
+
+              <!-- Herramientas Primaria -->
+              <div class="sub-column" id="group-pri-tools">
+                <div class="node node-concept" id="node-pri-tool-1" data-axes="all primaria">
+                  <strong>Qualtrics / Typeform con IA:</strong> <span>encuestas dinámicas personalizadas.</span>
+                </div>
+                <div class="node node-concept" id="node-pri-tool-2" data-axes="all primaria">
+                  <strong>Chatbots conversacionales:</strong> <span>entrevistas cualitativas a gran escala.</span>
+                </div>
+                <div class="node node-concept" id="node-pri-tool-3" data-axes="all primaria">
+                  <strong>Procesamiento de Lenguaje Natural (NLP):</strong> <span>análisis de reseñas, audios y videos.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- NIVEL 3: CONVERGENCIA EN BENEFICIOS Y RIESGOS -->
+        <section class="evaluation-row">
+          <div class="node node-eval" id="node-benefits" data-axes="all eval secundaria primaria">
+            <div class="node-eval-header">
+              <h4>Beneficios y Oportunidades</h4>
+            </div>
+            <ul class="eval-list">
+              <li><strong>Mayor velocidad:</strong> análisis de grandes volúmenes de datos en minutos.</li>
+              <li><strong>Menor costo operativo:</strong> automatización de tareas repetitivas de tabulación.</li>
+              <li><strong>Mejor calidad y cobertura:</strong> muestras amplias y monitoreo continuo del mercado.</li>
+            </ul>
+          </div>
+
+          <div class="node node-eval" id="node-risks" data-axes="all eval secundaria primaria">
+            <div class="node-eval-header">
+              <h4>Riesgos y Limitaciones</h4>
+            </div>
+            <ul class="eval-list">
+              <li><strong>Errores y sesgos:</strong> posibilidad de datos inventados o fuentes desactualizadas.</li>
+              <li><strong>Falta de contexto cultural:</strong> dificultad para captar sarcasmo y emociones profundas.</li>
+              <li><strong>Brecha digital y autenticidad:</strong> exclusión de grupos y respuestas generadas por bots.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- NIVEL 4: IMPACTO EN LA TOMA DE DECISIONES -->
+        <section class="final-section">
+          <div class="node node-final-title" id="node-decision" data-axes="all decisiones eval">
+            <h3>Impacto en la Toma de Decisiones de Marketing (IA + Criterio Humano)</h3>
+          </div>
+
+          <div class="final-outcomes-grid">
+            <div class="node node-outcome" id="node-outcome-permite" data-axes="all decisiones">
+              <strong>Estrategias basadas en evidencia:</strong> Segmentación precisa, reducción de riesgo al lanzar productos, ajuste dinámico de precios y anticipación a cambios del mercado.
+            </div>
+
+            <div class="node node-outcome" id="node-outcome-requiere" data-axes="all decisiones">
+              <strong>Criterio humano indispensable:</strong> Definir correctamente el problema, interpretar el contexto cultural y real, actuar con ética y asumir la decisión estratégica final.
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <div class="help-badge">
+    Arrastra para mover • Rueda del ratón para zoom • Usa "Descargar / Imprimir PDF" para guardar en 1 hoja horizontal
+  </div>
+
+  <script>
+    /**
+     * LÓGICA DEL MAPA CONCEPTUAL INTERACTIVO
+     * - Renderizado dinámico de conectores SVG y palabras de enlace en cursiva
+     * - Filtrado por eje temático
+     * - Control de Pan (arrastre) y Zoom
+     */
+    (function () {
+      const stage = document.getElementById("canvas-stage");
+      const viewport = document.getElementById("viewport");
+      const svgGroup = document.getElementById("svg-lines-group");
+      const labelsLayer = document.getElementById("link-labels-layer");
+
+      // Definición de relaciones conceptuales (origen -> destino + palabra de enlace)
+      const connections = [
+        // Raíz hacia Ramas 1 y 2 (con etiqueta compartida en el punto de bifurcación)
+        {
+          from: "node-root",
+          to: "node-sec",
+          type: "fork-left",
+          label: "transforma la obtención, procesamiento e interpretación de datos mediante",
+          labelSharedGroup: "root-split",
+          axes: ["all", "secundaria"]
+        },
+        {
+          from: "node-root",
+          to: "node-pri",
+          type: "fork-right",
+          label: "",
+          labelSharedGroup: "root-split",
+          axes: ["all", "primaria"]
+        },
+
+        // Rama 1 (Secundaria) -> Aplicaciones y Herramientas
+        {
+          from: "node-sec",
+          to: "node-sec-app-1",
+          type: "straight",
+          label: "se aplica en",
+          axes: ["all", "secundaria"]
+        },
+        {
+          from: "node-sec",
+          to: "node-sec-tool-1",
+          type: "straight",
+          label: "utiliza herramientas como",
+          axes: ["all", "secundaria"]
+        },
+        // Cascada interna entre tarjetas de Secundaria
+        { from: "node-sec-app-1", to: "node-sec-app-2", type: "short-v", label: "", axes: ["all", "secundaria"] },
+        { from: "node-sec-app-2", to: "node-sec-app-3", type: "short-v", label: "", axes: ["all", "secundaria"] },
+        { from: "node-sec-tool-1", to: "node-sec-tool-2", type: "short-v", label: "", axes: ["all", "secundaria"] },
+        { from: "node-sec-tool-2", to: "node-sec-tool-3", type: "short-v", label: "", axes: ["all", "secundaria"] },
+
+        // Rama 2 (Primaria) -> Aplicaciones y Herramientas
+        {
+          from: "node-pri",
+          to: "node-pri-app-1",
+          type: "straight",
+          label: "se aplica en",
+          axes: ["all", "primaria"]
+        },
+        {
+          from: "node-pri",
+          to: "node-pri-tool-1",
+          type: "straight",
+          label: "utiliza herramientas como",
+          axes: ["all", "primaria"]
+        },
+        // Cascada interna entre tarjetas de Primaria
+        { from: "node-pri-app-1", to: "node-pri-app-2", type: "short-v", label: "", axes: ["all", "primaria"] },
+        { from: "node-pri-app-2", to: "node-pri-app-3", type: "short-v", label: "", axes: ["all", "primaria"] },
+        { from: "node-pri-tool-1", to: "node-pri-tool-2", type: "short-v", label: "", axes: ["all", "primaria"] },
+        { from: "node-pri-tool-2", to: "node-pri-tool-3", type: "short-v", label: "", axes: ["all", "primaria"] },
+
+        // Convergencia de ambas investigaciones hacia Beneficios y Riesgos
+        {
+          from: "node-sec-tool-3",
+          to: "node-benefits",
+          type: "straight",
+          label: "genera",
+          axes: ["all", "secundaria", "eval"]
+        },
+        {
+          from: "node-pri-app-3",
+          to: "node-risks",
+          type: "straight",
+          label: "implica",
+          axes: ["all", "primaria", "eval"]
+        },
+        {
+          from: "node-sec-app-3",
+          to: "node-risks",
+          type: "cross",
+          label: "",
+          axes: ["all", "secundaria", "eval"]
+        },
+        {
+          from: "node-pri-tool-3",
+          to: "node-benefits",
+          type: "cross",
+          label: "",
+          axes: ["all", "primaria", "eval"]
+        },
+
+        // Beneficios y Riesgos -> Toma de decisiones
+        {
+          from: "node-benefits",
+          to: "node-decision",
+          type: "straight",
+          label: "potencia la",
+          axes: ["all", "eval", "decisiones"]
+        },
+        {
+          from: "node-risks",
+          to: "node-decision",
+          type: "straight",
+          label: "condiciona la",
+          axes: ["all", "eval", "decisiones"]
+        },
+
+        // Toma de decisiones -> Permite y Requiere
+        {
+          from: "node-decision",
+          to: "node-outcome-permite",
+          type: "straight",
+          label: "permite",
+          axes: ["all", "decisiones"]
+        },
+        {
+          from: "node-decision",
+          to: "node-outcome-requiere",
+          type: "straight",
+          label: "requiere",
+          axes: ["all", "decisiones"]
+        }
+      ];
+
+      let currentFilter = "all";
+
+      /**
+       * Obtiene coordenadas relativas al contenedor #canvas-stage sin verse afectado por el zoom CSS
+       */
+      function getRelativeBox(el) {
+        let x = 0;
+        let y = 0;
+        let curr = el;
+        while (curr && curr !== stage) {
+          x += curr.offsetLeft;
+          y += curr.offsetTop;
+          curr = curr.offsetParent;
+        }
+        return {
+          left: x,
+          top: y,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          centerX: x + el.offsetWidth / 2,
+          bottom: y + el.offsetHeight
+        };
+      }
+
+      /**
+       * Dibuja todas las líneas SVG y posiciona las palabras de enlace
+       */
+      function drawConnectors() {
+        svgGroup.innerHTML = "";
+        labelsLayer.innerHTML = "";
+
+        const rootBox = getRelativeBox(document.getElementById("node-root"));
+        const secBox = getRelativeBox(document.getElementById("node-sec"));
+        const priBox = getRelativeBox(document.getElementById("node-pri"));
+
+        connections.forEach((conn) => {
+          const fromEl = document.getElementById(conn.from);
+          const toEl = document.getElementById(conn.to);
+          if (!fromEl || !toEl) return;
+
+          const a = getRelativeBox(fromEl);
+          const b = getRelativeBox(toEl);
+
+          const isActive = currentFilter === "all" || conn.axes.includes(currentFilter);
+          const strokeColor = isActive ? "#222222" : "#d0d0d0";
+          const strokeWidth = conn.type === "cross" ? "1.1" : "1.5";
+          const dashArray = conn.type === "cross" ? "4,4" : "none";
+          const marker = isActive ? "url(#arrow)" : "url(#arrow-muted)";
+
+          let pathD = "";
+          let labelX = 0;
+          let labelY = 0;
+
+          if (conn.type === "fork-left" || conn.type === "fork-right") {
+            // Bifurcación ortogonal limpia desde la raíz hacia las dos ramas principales
+            const midY = rootBox.bottom + (secBox.top - rootBox.bottom) * 0.56;
+            pathD = `M ${a.centerX} ${a.bottom} L ${a.centerX} ${midY} L ${b.centerX} ${midY} L ${b.centerX} ${b.top - 3}`;
+            labelX = rootBox.centerX;
+            labelY = rootBox.bottom + (midY - rootBox.bottom) * 0.52;
+          } else if (conn.type === "short-v") {
+            // Conector corto vertical entre conceptos hermanos
+            pathD = `M ${a.centerX} ${a.bottom} L ${b.centerX} ${b.top - 2}`;
+          } else {
+            // Conector curvo suave (Bezier cúbica) para lectura jerárquica limpia
+            const startX = a.centerX;
+            const startY = a.bottom;
+            const endX = b.centerX;
+            const endY = b.top - 3;
+            const deltaY = (endY - startY) * 0.5;
+
+            pathD = `M ${startX} ${startY} C ${startX} ${startY + deltaY}, ${endX} ${endY - deltaY}, ${endX} ${endY}`;
+            labelX = (startX + endX) / 2;
+            labelY = (startY + endY) / 2;
+          }
+
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", pathD);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", strokeColor);
+          path.setAttribute("stroke-width", strokeWidth);
+          if (dashArray !== "none") {
+            path.setAttribute("stroke-dasharray", dashArray);
+          }
+          path.setAttribute("marker-end", marker);
+          svgGroup.appendChild(path);
+
+          // Crear etiqueta de relación si existe texto
+          if (conn.label) {
+            const labelEl = document.createElement("div");
+            labelEl.className = "link-label" + (isActive ? "" : " dimmed");
+            labelEl.textContent = conn.label;
+            labelEl.style.left = `${labelX}px`;
+            labelEl.style.top = `${labelY}px`;
+            labelsLayer.appendChild(labelEl);
+          }
+        });
+      }
+
+      /**
+       * Filtrado por eje temático
+       */
+      const filterButtons = document.querySelectorAll("[data-filter]");
+      const allNodes = document.querySelectorAll(".node");
+
+      filterButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          filterButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentFilter = btn.getAttribute("data-filter");
+
+          allNodes.forEach((node) => {
+            const nodeAxes = (node.getAttribute("data-axes") || "").split(" ");
+            if (currentFilter === "all") {
+              node.classList.remove("dimmed", "highlighted");
+            } else if (nodeAxes.includes(currentFilter)) {
+              node.classList.remove("dimmed");
+              node.classList.add("highlighted");
+            } else {
+              node.classList.add("dimmed");
+              node.classList.remove("highlighted");
+            }
+          });
+
+          drawConnectors();
+        });
+      });
+
+      /**
+       * Control de Zoom y Arrastre (Pan)
+       */
+      let scale = 1;
+      let translateX = 0;
+      let translateY = 0;
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+
+      const zoomLevelEl = document.getElementById("zoom-level");
+
+      function updateTransform() {
+        stage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        zoomLevelEl.textContent = `${Math.round(scale * 100)}%`;
+      }
+
+      function fitToScreen() {
+        const vw = viewport.clientWidth;
+        const vh = viewport.clientHeight;
+        const sw = stage.offsetWidth;
+        const sh = stage.offsetHeight;
+
+        const scaleX = (vw - 24) / sw;
+        const scaleY = (vh - 24) / sh;
+        scale = Math.min(scaleX, scaleY, 1);
+        scale = Math.max(scale, 0.35);
+
+        translateX = Math.max((vw - sw * scale) / 2, 12);
+        translateY = 12;
+        updateTransform();
+      }
+
+      document.getElementById("zoom-in").addEventListener("click", () => {
+        scale = Math.min(scale + 0.1, 1.6);
+        updateTransform();
+      });
+
+      document.getElementById("zoom-out").addEventListener("click", () => {
+        scale = Math.max(scale - 0.1, 0.35);
+        updateTransform();
+      });
+
+      document.getElementById("zoom-fit").addEventListener("click", fitToScreen);
+
+      // Zoom con rueda del ratón
+      viewport.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.07 : -0.07;
+          const nextScale = Math.min(Math.max(scale + delta, 0.35), 1.6);
+
+          const rect = viewport.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          translateX = mouseX - ((mouseX - translateX) / scale) * nextScale;
+          translateY = mouseY - ((mouseY - translateY) / scale) * nextScale;
+          scale = nextScale;
+          updateTransform();
+        },
+        { passive: false }
+      );
+
+      // Arrastre con ratón
+      viewport.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+      });
+
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+      });
+
+      // Soporte táctil básico para móviles/tablets
+      viewport.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+          }
+        },
+        { passive: true }
+      );
+
+      viewport.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!isDragging || e.touches.length !== 1) return;
+          translateX = e.touches[0].clientX - startX;
+          translateY = e.touches[0].clientY - startY;
+          updateTransform();
+        },
+        { passive: true }
+      );
+
+      viewport.addEventListener("touchend", () => {
+        isDragging = false;
+      });
+
+      // Botón Imprimir / Exportar PDF
+      document.getElementById("btn-print").addEventListener("click", () => {
+        window.print();
+      });
+
+      // Inicialización al cargar y al redimensionar
+      window.addEventListener("load", () => {
+        drawConnectors();
+        fitToScreen();
+      });
+
+      window.addEventListener("resize", () => {
+        drawConnectors();
+      });
+    })();
+  </script>
+</body>
+</html>
